@@ -125,21 +125,19 @@ with gr.Blocks(theme=gr.themes.Soft(), css="""
 
     with gr.Row():
         with gr.Column(scale=1):
-            with gr.Box():
-                gr.Markdown("### 🧮 Input Properti")
-                price = gr.Number(label="Harga Properti", value=500000, precision=0)
-                bedrooms = gr.Number(label="Jumlah Kamar Tidur", value=3, precision=0)
-                bathrooms = gr.Number(label="Jumlah Kamar Mandi", value=2, precision=0)
-                sqft_living = gr.Number(label="Luas Bangunan (sqft_living)", value=2500, precision=0)
-                sqft_lot = gr.Number(label="Luas Tanah (sqft_lot)", value=5000, precision=0)
-                submit_btn = gr.Button("Prediksi Segmentasi", variant="primary")
+            gr.Markdown("### 🧮 Input Properti")
+            price = gr.Number(label="Harga Properti", value=500000, precision=0)
+            bedrooms = gr.Number(label="Jumlah Kamar Tidur", value=3, precision=0)
+            bathrooms = gr.Number(label="Jumlah Kamar Mandi", value=2, precision=0)
+            sqft_living = gr.Number(label="Luas Bangunan (sqft_living)", value=2500, precision=0)
+            sqft_lot = gr.Number(label="Luas Tanah (sqft_lot)", value=5000, precision=0)
+            submit_btn = gr.Button("Prediksi Segmentasi", variant="primary")
 
         with gr.Column(scale=1):
-            with gr.Box():
-                gr.Markdown("### 📊 Hasil Analisis")
-                result_md = gr.Markdown("### ⏳ Silakan masukkan data properti")
-                result_badge = gr.Markdown("<div class='badge'>Belum ada hasil</div>")
-                result_summary = gr.Markdown("Hasil prediksi akan tampil di sini.")
+            gr.Markdown("### 📊 Hasil Analisis")
+            result_md = gr.Markdown("### ⏳ Silakan masukkan data properti")
+            result_badge = gr.Markdown("<div class='badge'>Belum ada hasil</div>")
+            result_summary = gr.Markdown("Hasil prediksi akan tampil di sini.")
 
     gr.Markdown("### 🧪 Contoh Input")
     gr.Examples(
