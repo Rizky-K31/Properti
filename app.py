@@ -1,21 +1,12 @@
-import os
 from pathlib import Path
 
-import gradio as gr
 import joblib
 import numpy as np
+import streamlit as st
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "knn_dbscan_proxy.joblib"
 SCALER_PATH = BASE_DIR / "scaler.joblib"
-
-if not MODEL_PATH.exists():
-    raise FileNotFoundError(f"Model tidak ditemukan: {MODEL_PATH}")
-if not SCALER_PATH.exists():
-    raise FileNotFoundError(f"Scaler tidak ditemukan: {SCALER_PATH}")
-
-model = joblib.load(MODEL_PATH)
-scaler = joblib.load(SCALER_PATH)
 
 CLUSTER_LABELS = {
     0: "Tipe Menengah",
@@ -32,21 +23,25 @@ SEGMENT_DESCRIPTIONS = {
     "Tipe Compact / Ekonomis": "Properti berskala lebih kecil namun tetap layak untuk kebutuhan rumah sederhana dan efisien.",
 }
 
-EXAMPLES = [
-    [450000, 3, 2, 1800, 2400],
-    [900000, 4, 3, 2600, 3200],
-    [320000, 2, 1, 1200, 1800],
-    [1500000, 5, 4, 3600, 4200],
-]
+
+@st.cache_resource
+def load_model():
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Model tidak ditemukan: {MODEL_PATH}")
+    if not SCALER_PATH.exists():
+        raise FileNotFoundError(f"Scaler tidak ditemukan: {SCALER_PATH}")
+
+    model = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+    return model, scaler
+
+
+model, scaler = load_model()
 
 
 def predict_segment(price, bedrooms, bathrooms, sqft_living, sqft_lot):
     if any(value <= 0 for value in [price, bedrooms, bathrooms, sqft_living, sqft_lot]):
-        return (
-            "### ⚠️ Input tidak valid\nSemua nilai harus lebih besar dari 0.",
-            "-",
-            "Pastikan semua field diisi dengan angka yang valid.",
-        )
+        raise ValueError("Semua nilai harus lebih besar dari 0.")
 
     features = np.array(
         [[float(price), float(bedrooms), float(bathrooms), float(sqft_living), float(sqft_lot)]],
@@ -67,100 +62,62 @@ def predict_segment(price, bedrooms, bathrooms, sqft_living, sqft_lot):
         badge = "✨ Premium"
         accent = "#f39c12"
 
-    result_md = f"""
-### ✅ Hasil Prediksi Segmentasi Properti
-- Kategori: <span style='color:{accent}; font-weight:700'>{label}</span>
-- Cluster ID: {cluster_id}
-- Keterangan: {description}
-"""
-
-    summary = (
-        f"Properti ini tergolong ke dalam <b>{label}</b>. "
-        f"Berdasarkan model clustering, karakteristiknya cocok untuk segmen {description.lower()}"
-    )
-    return result_md, badge, summary
+    return label, cluster_id, description, badge, accent
 
 
-with gr.Blocks(theme=gr.themes.Soft(), css="""
-    .main-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-    .title {
-        text-align: center;
-        font-size: 2.2rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-    .subtitle {
-        text-align: center;
-        color: #4b5563;
-        margin-bottom: 20px;
-    }
-    .card {
-        border-radius: 16px;
-        padding: 18px;
-        background: linear-gradient(135deg, #f8fafc, #eef2ff);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .badge {
-        font-size: 1rem;
-        font-weight: 700;
-        padding: 8px 14px;
-        border-radius: 999px;
-        display: inline-block;
-        background: #e0f2fe;
-        color: #0f172a;
-    }
-""") as demo:
-    gr.Markdown(
-        """
-        <div class="main-container">
-            <div class="title">🏠 Dashboard Segmentasi Properti</div>
-            <div class="subtitle">Prediksi tipe properti berdasarkan 5 fitur utama: harga, jumlah kamar, luas bangunan, dan luas tanah.</div>
-        </div>
-        """
-    )
+st.set_page_config(page_title="Dashboard Segmentasi Properti", page_icon="🏠", layout="wide")
 
-    with gr.Row():
-        with gr.Column(scale=1):
-            gr.Markdown("### 🧮 Input Properti")
-            price = gr.Number(label="Harga Properti", value=500000, precision=0)
-            bedrooms = gr.Number(label="Jumlah Kamar Tidur", value=3, precision=0)
-            bathrooms = gr.Number(label="Jumlah Kamar Mandi", value=2, precision=0)
-            sqft_living = gr.Number(label="Luas Bangunan (sqft_living)", value=2500, precision=0)
-            sqft_lot = gr.Number(label="Luas Tanah (sqft_lot)", value=5000, precision=0)
-            submit_btn = gr.Button("Prediksi Segmentasi", variant="primary")
+st.title("🏠 Dashboard Segmentasi Properti")
+st.caption("Prediksi tipe properti berdasarkan 5 fitur utama: harga, kamar, luas bangunan, dan luas tanah.")
 
-        with gr.Column(scale=1):
-            gr.Markdown("### 📊 Hasil Analisis")
-            result_md = gr.Markdown("### ⏳ Silakan masukkan data properti")
-            result_badge = gr.Markdown("<div class='badge'>Belum ada hasil</div>")
-            result_summary = gr.Markdown("Hasil prediksi akan tampil di sini.")
+with st.form("property_form"):
+    col1, col2 = st.columns(2)
 
-    gr.Markdown("### 🧪 Contoh Input")
-    gr.Examples(
-        examples=EXAMPLES,
-        inputs=[price, bedrooms, bathrooms, sqft_living, sqft_lot],
-        label="Contoh dataset properti",
-        examples_per_page=4,
-    )
+    with col1:
+        price = st.number_input("Harga Properti", min_value=1, value=500000, step=10000)
+        bedrooms = st.number_input("Jumlah Kamar Tidur", min_value=1, value=3, step=1)
+        bathrooms = st.number_input("Jumlah Kamar Mandi", min_value=1, value=2, step=1)
 
-    submit_btn.click(
-        fn=predict_segment,
-        inputs=[price, bedrooms, bathrooms, sqft_living, sqft_lot],
-        outputs=[result_md, result_badge, result_summary],
-    )
+    with col2:
+        sqft_living = st.number_input("Luas Bangunan (sqft_living)", min_value=1, value=2500, step=100)
+        sqft_lot = st.number_input("Luas Tanah (sqft_lot)", min_value=1, value=5000, step=100)
 
-    gr.Markdown(
-        """
-        ### 🔎 Keterangan segmentasi
-        - Tipe Compact / Ekonomis: properti dengan skala kecil atau hemat biaya
-        - Tipe Menengah: properti dengan keseimbangan harga dan kebutuhan keluarga
-        - Tipe Premium: properti dengan nilai tinggi, luas besar, dan kualitas premium
-        """
-    )
+    submitted = st.form_submit_button("Prediksi Segmentasi", use_container_width=True)
 
-if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+if submitted:
+    try:
+        label, cluster_id, description, badge, accent = predict_segment(
+            price, bedrooms, bathrooms, sqft_living, sqft_lot
+        )
+
+        st.markdown(
+            f"""
+            <div style="padding:20px; border-radius:12px; background:linear-gradient(135deg,#f8fafc,#eef2ff); border:1px solid #e5e7eb;">
+                <h3 style="margin-top:0;">✅ Hasil Prediksi</h3>
+                <p><b>Kategori:</b> <span style="color:{accent}; font-weight:700;">{label}</span></p>
+                <p><b>Cluster ID:</b> {cluster_id}</p>
+                <p><b>Keterangan:</b> {description}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(f"<div style='margin-top:16px; padding:10px 14px; border-radius:999px; background:#e0f2fe; display:inline-block; font-weight:700;'>{badge}</div>", unsafe_allow_html=True)
+
+    except ValueError as exc:
+        st.error(str(exc))
+
+st.markdown("---")
+
+st.subheader("Contoh Input Properti")
+example_data = [
+    {"Harga": 450000, "Kamar Tidur": 3, "Kamar Mandi": 2, "Luas Bangunan": 1800, "Luas Tanah": 2400},
+    {"Harga": 900000, "Kamar Tidur": 4, "Kamar Mandi": 3, "Luas Bangunan": 2600, "Luas Tanah": 3200},
+    {"Harga": 320000, "Kamar Tidur": 2, "Kamar Mandi": 1, "Luas Bangunan": 1200, "Luas Tanah": 1800},
+    {"Harga": 1500000, "Kamar Tidur": 5, "Kamar Mandi": 4, "Luas Bangunan": 3600, "Luas Tanah": 4200},
+]
+
+st.dataframe(example_data, use_container_width=True)
+
+st.markdown("### Keterangan Segmentasi")
+st.info("- Tipe Compact / Ekonomis: properti dengan skala kecil atau hemat biaya\n- Tipe Menengah: properti dengan keseimbangan harga dan kebutuhan keluarga\n- Tipe Premium: properti dengan nilai tinggi, luas besar, dan kualitas premium")
