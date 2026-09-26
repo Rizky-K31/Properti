@@ -92,7 +92,7 @@ if submitted:
 
         st.markdown(
             f"""
-            <div style="padding:20px; border-radius:12px; background:linear-gradient(135deg,#f8fafc,#eef2ff); border:1px solid #e5e7eb;">
+            <div style="padding:20px; border-radius:12px; background:linear-gradient(135deg,#f8fafc,#eef2ff); border:1px solid #deb887;">
                 <h3 style="margin-top:0;">✅ Hasil Prediksi</h3>
                 <p><b>Kategori:</b> <span style="color:{accent}; font-weight:700;">{label}</span></p>
                 <p><b>Cluster ID:</b> {cluster_id}</p>
