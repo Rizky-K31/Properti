@@ -54,13 +54,18 @@ def predict_segment(price, bedrooms, bathrooms, sqft_living, sqft_lot):
 
     if label == "Tipe Compact / Ekonomis":
         badge = "🏠 Ekonomis"
-        accent = "#2ecc71"
+        accent = "#1d7a3d"
+        bg = "#dff7e8"
     elif label == "Tipe Menengah":
         badge = "🏡 Menengah"
-        accent = "#3498db"
+        accent = "#1d4ed8"
+        bg = "#dbeafe"
     else:
         badge = "✨ Premium"
-        accent = "#f39c12"
+        accent = "#b45309"
+        bg = "#fef3c7"
+
+    return label, cluster_id, description, badge, accent, bg
 
     return label, cluster_id, description, badge, accent
 
@@ -86,23 +91,26 @@ with st.form("property_form"):
 
 if submitted:
     try:
-        label, cluster_id, description, badge, accent = predict_segment(
+        label, cluster_id, description, badge, accent, bg = predict_segment(
             price, bedrooms, bathrooms, sqft_living, sqft_lot
         )
 
         st.markdown(
             f"""
-            <div style="padding:20px; border-radius:12px; background:linear-gradient(135deg,#f8fafc,#eef2ff); border:1px solid #deb887;">
-                <h3 style="margin-top:0;">✅ Hasil Prediksi</h3>
-                <p><b>Kategori:</b> <span style="color:{accent}; font-weight:700;">{label}</span></p>
-                <p><b>Cluster ID:</b> {cluster_id}</p>
-                <p><b>Keterangan:</b> {description}</p>
+            <div style="padding:20px; border-radius:12px; background:{bg}; border:1px solid {accent}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);">
+                <h3 style="margin-top:0; color:#111827;">✅ Hasil Prediksi</h3>
+                <p style="color:#111827;"><b>Kategori:</b> <span style="color:{accent}; font-weight:700;">{label}</span></p>
+                <p style="color:#111827;"><b>Cluster ID:</b> {cluster_id}</p>
+                <p style="color:#111827;"><b>Keterangan:</b> {description}</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown(f"<div style='margin-top:16px; padding:10px 14px; border-radius:999px; background:#e0f2fe; display:inline-block; font-weight:700;'>{badge}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='margin-top:16px; padding:10px 14px; border-radius:999px; background:{bg}; color:{accent}; display:inline-block; font-weight:700; border:1px solid {accent};'>{badge}</div>",
+            unsafe_allow_html=True,
+        )
 
     except ValueError as exc:
         st.error(str(exc))
